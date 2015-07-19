@@ -1,8 +1,15 @@
 ﻿using UnityEngine;
 using UnityEngine.Networking;
+using FSM;
 
-public class PlayerMovement : NetworkBehaviour
+public class PlayerMovement : NetworkStateBehaviour
 {
+    public enum States {
+        Idle,
+        Walking
+    }
+
+    
     public float speed = 6f;
 
     Vector3 movement;
@@ -11,36 +18,22 @@ public class PlayerMovement : NetworkBehaviour
     int floorMask;
     float camRayLenght = 100f;
 
-    [SyncVar (hook = "OnWalkingChange")]
-    bool isWalking;
     
     void Awake()
     {
         floorMask = LayerMask.GetMask("Floor");
         anim = GetComponent<Animator>();
         playerRigidbody = GetComponent<Rigidbody>();
-        anim.SetBool("IsWalking", isWalking);
-
     }
     
     void Start() {
-        isWalking = false;
         if (isLocalPlayer)
         {
             CameraFollow cf = Camera.main.GetComponent<CameraFollow>();
             cf.target = transform;
             cf.enabled = true;
         }
-
-    }
-
-    [Client]
-    void OnWalkingChange(bool isWalkingNew) {
-        if (isWalkingNew != isWalking)
-        {
-            isWalking = isWalkingNew;
-            anim.SetBool("IsWalking", isWalking);
-        }
+        Init(States.Idle);
     }
 
     void FixedUpdate()
@@ -81,15 +74,30 @@ public class PlayerMovement : NetworkBehaviour
 
 
     void Animating(float h, float v) {
-        bool newWalkingStatus = h != 0f || v != 0f;
-        if (newWalkingStatus != isWalking) {
+        States newWalkingStatus = h != 0f || v != 0f ? States.Walking : States.Idle;
+        if (newWalkingStatus != (States) GetState()) {
+            ChangeState(newWalkingStatus);
             CmdChangeWalkingStatus(newWalkingStatus);
         }
     }
 
     [Command]
-    void CmdChangeWalkingStatus(bool walkingStatus) {
-        isWalking = walkingStatus;
-        anim.SetBool("IsWalking", isWalking);
+    void CmdChangeWalkingStatus(States state) {
+        RpcChangeWalkingStatue(state);
+    }
+    
+    [ClientRpc]
+    void RpcChangeWalkingStatue(States state) {
+        ChangeState(state);
+    }
+
+    [StateBehaviour(state = "Idle", on = "Enter")]
+    void IdleEnter() {
+        anim.SetBool("IsWalking", false);
+    }
+
+    [StateBehaviour(state = "Walking", on = "Enter")]
+    void WalkingEnter() {
+        anim.SetBool("IsWalking", true);
     }
 }
