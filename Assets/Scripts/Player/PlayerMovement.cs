@@ -33,7 +33,7 @@ public class PlayerMovement : NetworkStateBehaviour
             cf.target = transform;
             cf.enabled = true;
         }
-        Init(States.Idle);
+        InitState(States.Idle);
     }
 
     void FixedUpdate()
@@ -85,7 +85,7 @@ public class PlayerMovement : NetworkStateBehaviour
     void CmdChangeWalkingStatus(States state) {
         RpcChangeWalkingStatue(state);
     }
-    
+
     [ClientRpc]
     void RpcChangeWalkingStatue(States state) {
         ChangeState(state);
