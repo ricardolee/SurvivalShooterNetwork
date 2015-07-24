@@ -1,15 +1,18 @@
 ﻿using UnityEngine;
 using UnityEngine.Networking;
-using FSM;
+using Toolkit;
 
-public class PlayerMovement : NetworkStateBehaviour
+[RequireComponent(typeof(FiniteStateMachine))]
+public class PlayerMovement : NetworkBehaviour
 {
-    public enum States {
-        Idle,
-        Walking
+
+    public static class Movement {
+        public const string name = "Movement";
+        public const string Idle = "Idle";
+        public const string Walking = "Walking";
     }
 
-    
+
     public float speed = 6f;
 
     Vector3 movement;
@@ -18,9 +21,11 @@ public class PlayerMovement : NetworkStateBehaviour
     int floorMask;
     float camRayLenght = 100f;
 
+    FiniteStateMachine fsm;
     
     void Awake()
     {
+        fsm = GetComponent<FiniteStateMachine>();
         floorMask = LayerMask.GetMask("Floor");
         anim = GetComponent<Animator>();
         playerRigidbody = GetComponent<Rigidbody>();
@@ -33,17 +38,17 @@ public class PlayerMovement : NetworkStateBehaviour
             cf.target = transform;
             cf.enabled = true;
         }
-        InitState(States.Idle);
+        fsm.ChangeState(Movement.name, Movement.Idle);
     }
 
     void FixedUpdate()
     {
         if (isLocalPlayer) {
-            Movement();
+            Move();
         }
     }
 
-    private void Movement()
+    private void Move()
     {
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
@@ -74,30 +79,32 @@ public class PlayerMovement : NetworkStateBehaviour
 
 
     void Animating(float h, float v) {
-        States newWalkingStatus = h != 0f || v != 0f ? States.Walking : States.Idle;
-        if (newWalkingStatus != (States) GetState()) {
-            ChangeState(newWalkingStatus);
+        string newWalkingStatus = h != 0f || v != 0f ? Movement.Walking : Movement.Idle;
+        if (fsm.ChangeState(Movement.name, newWalkingStatus))
+        {
             CmdChangeWalkingStatus(newWalkingStatus);
         }
     }
 
     [Command]
-    void CmdChangeWalkingStatus(States state) {
+    void CmdChangeWalkingStatus(string state) {
         RpcChangeWalkingStatue(state);
     }
 
     [ClientRpc]
-    void RpcChangeWalkingStatue(States state) {
-        ChangeState(state);
+    void RpcChangeWalkingStatue(string state) {
+        fsm.ChangeState(Movement.name, state);
     }
 
-    [StateBehaviour(state = "Idle", on = "Enter")]
+    [StateListener(state = Movement.name, when = Movement.Idle, on = "Enter")]
     void IdleEnter() {
+        Debug.Log(("Idel"));
         anim.SetBool("IsWalking", false);
     }
 
-    [StateBehaviour(state = "Walking", on = "Enter")]
+    [StateListener(state = Movement.name, when = Movement.Walking, on = "Enter")]
     void WalkingEnter() {
+        Debug.Log("Wakling");
         anim.SetBool("IsWalking", true);
     }
 }

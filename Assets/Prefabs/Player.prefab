@@ -46,8 +46,10 @@ GameObject:
   - 54: {fileID: 5461026}
   - 114: {fileID: 11481542}
   - 114: {fileID: 11453832}
-  - 114: {fileID: 11415144}
+  - 114: {fileID: 11492182}
+  - 114: {fileID: 11441892}
   - 114: {fileID: 11487212}
+  - 114: {fileID: 11459178}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -328,7 +330,7 @@ Light:
   m_ShadowRadius: 0
   m_ShadowAngle: 0
   m_AreaSize: {x: 1, y: 1}
---- !u!114 &11415144
+--- !u!114 &11441892
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
@@ -336,9 +338,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 140940}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c778f2d3af6984230883a0471a2d3f8e, type: 3}
+  m_Script: {fileID: 11500000, guid: 0b3e93dbff11046c1bfcef8ad46074cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  events: {fileID: 0}
 --- !u!114 &11453832
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -359,6 +362,20 @@ MonoBehaviour:
   m_SnapThreshold: 1
   m_InterpolateRotation: 0
   m_InterpolateMovement: 0
+--- !u!114 &11459178
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 140940}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27c63be2a8918c741863160b9d9da122, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damagePerShot: 20
+  fireRate: .150000006
+  range: 100
 --- !u!114 &11481542
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -403,6 +420,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 6
+--- !u!114 &11492182
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 140940}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6942b36202284d46b8fcdbdcb015a63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!120 &12077596
 LineRenderer:
   m_ObjectHideFlags: 1
