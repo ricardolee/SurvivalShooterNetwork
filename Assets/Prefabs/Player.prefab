@@ -50,6 +50,8 @@ GameObject:
   - 114: {fileID: 11441892}
   - 114: {fileID: 11487212}
   - 114: {fileID: 11459178}
+  - 114: {fileID: 11437506}
+  - 114: {fileID: 11495214}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -158,6 +160,7 @@ AudioSource:
   m_Pitch: 1
   Loop: 0
   Mute: 0
+  Spatialize: 0
   Priority: 128
   DopplerLevel: 1
   MinDistance: 1
@@ -227,6 +230,7 @@ AudioSource:
   m_Pitch: 1
   Loop: 0
   Mute: 0
+  Spatialize: 0
   Priority: 128
   DopplerLevel: 1
   MinDistance: 1
@@ -330,6 +334,21 @@ Light:
   m_ShadowRadius: 0
   m_ShadowAngle: 0
   m_AreaSize: {x: 1, y: 1}
+--- !u!114 &11437506
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 140940}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 544f2064df03e95419b4a5147c506b08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerHurt: {fileID: 8300000, guid: 9922a12f34d0a084aab32de985459723, type: 3}
+  deathClip: {fileID: 8300000, guid: d36a393bca4582043982db9089e1694f, type: 3}
+  flashSpeed: .0500000007
+  flashColor: {r: 1, g: 0, b: 0, a: .100000001}
 --- !u!114 &11441892
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -341,7 +360,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b3e93dbff11046c1bfcef8ad46074cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  events: {fileID: 0}
+  _AutoManageChildren: 1
 --- !u!114 &11453832
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -429,6 +448,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b6942b36202284d46b8fcdbdcb015a63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &11495214
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 140940}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aad7a90ac821d421f84c6818489df2d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!120 &12077596
@@ -1712,6 +1742,10 @@ Prefab:
       propertyPath: m_Mass
       value: 10
       objectReference: {fileID: 0}
+    - target: {fileID: 0}
+      propertyPath: deathClip
+      value: 
+      objectReference: {fileID: 8300000, guid: d36a393bca4582043982db9089e1694f, type: 3}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 0}
   m_RootGameObject: {fileID: 140940}

@@ -1,59 +1,84 @@
 ﻿using UnityEngine;
+using UnityEngine.Networking;
+using System;
 using System.Collections;
+using Toolkit;
 
-public class EnemyAttack : MonoBehaviour {
+[RequireComponent(typeof(StateManager))]
+public class EnemyAttack : NetworkBehaviour
+{
+
+    public enum AttackState
+    {
+        Idle, Attack
+    }
+
     public float timeBetweenAttacks = 0.5f;
     public int attackDamage = 10;
-	
-	
+
+
+    GameObject targetPlayer;
+
+    [StateMachineInject]
+    StateMachine<AttackState> attachSM;
     Animator anim;
-    GameObject player;
-    PlayerHealth playerHealth;
-    EnemyHealth enemyHealth;
-    bool playerInRange;
-    float timer;
-	
-	
-    void Awake () {
-        player = GameObject.FindGameObjectWithTag ("Player");
-        playerHealth = player.GetComponent <PlayerHealth> ();
-        enemyHealth = GetComponent<EnemyHealth>();
-        anim = GetComponent <Animator> ();
+
+    void Awake()
+    {
+        anim = GetComponent<Animator>();
+        attachSM.Init(AttackState.Idle);
     }
-	
-	
-    void OnTriggerEnter (Collider other) {
-        if(other.gameObject == player) {
-            playerInRange = true;
+
+
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.tag == "Player" && attachSM.CurrentState == AttackState.Idle)
+        {
+            targetPlayer = other.gameObject;
+            attachSM.ChangeState(AttackState.Attack);
         }
     }
-	
-	
-    void OnTriggerExit (Collider other) {
-        if(other.gameObject == player) {
-            playerInRange = false;
-        }
+
+    void OnTriggerExit(Collider other)
+    {
+        if (other.gameObject == targetPlayer)
+            attachSM.ChangeState(AttackState.Idle);
     }
-	
-	
-    void Update () {
-        timer += Time.deltaTime;
-		
-        if (timer >= timeBetweenAttacks && playerInRange && enemyHealth.currentHealth > 0) {
-            Attack ();
-        }
-        
-        if (playerHealth.currentHealth <= 0) {
-            anim.SetTrigger ("PlayerDead");
-        }
+
+    [ClientRpc]
+    void RpcChangeState(AttackState state)
+    {
+        attachSM.ChangeState(state);
     }
-	
-	
-    void Attack () {
-        timer = 0f;
-		
-        if(playerHealth.currentHealth > 0) {
-            playerHealth.TakeDamage (attackDamage);
+
+
+    private Coroutine attackCoroutine;
+
+    [StateListener(state = AttackState.Attack, on = StateEvent.Enter)]
+    void AttackEnter()
+    {
+        attackCoroutine = StartCoroutine(AttackEnumerator());
+    }
+
+    [StateListener(state = AttackState.Attack, on = StateEvent.Exit)]
+    void AttackExit()
+    {
+        if (attackCoroutine != null)
+            StopCoroutine(attackCoroutine);
+    }
+
+
+    IEnumerator AttackEnumerator()
+    {
+        EventDispatcher events = targetPlayer.GetComponent<EventDispatcher>();
+        while (true && isActiveAndEnabled)
+        {
+            Action playDeathCallback = () =>
+            {
+                attachSM.ChangeState(AttackState.Idle);
+            };
+            events.Trigger(PlayerHealth.DamageEvent, attackDamage, playDeathCallback);
+            yield return new WaitForSeconds(timeBetweenAttacks);
         }
     }
 }

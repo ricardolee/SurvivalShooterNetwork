@@ -4,16 +4,12 @@ using System;
 using System.Collections;
 using Toolkit;
 
-[RequireComponent(typeof(FiniteStateMachine))]
+[RequireComponent(typeof(StateManager))]
 public class PlayerShooting : NetworkBehaviour
 {
-    public static class Shooting
+    public enum ShootingState
     {
-        // state name
-        public const string name = "Shooting";
-        // states
-        public const string Idle = "Idle";
-        public const string Fire = "Fire";
+        Idle, Fire
     }
 
     public int damagePerShot = 20;
@@ -29,11 +25,10 @@ public class PlayerShooting : NetworkBehaviour
     private Light gunLight;
     private float effectsDisplayTime = 0.02f;
     private GameObject gunBarrelEnd;
-    FiniteStateMachine fsm;
-    void Awake()
-    {
-        fsm = GetComponent<FiniteStateMachine>();
-    }
+
+    [StateMachineInject]
+    StateMachine<ShootingState> shootingSM;
+
     void Start()
     {
         shootableMask = LayerMask.GetMask("Shootable");
@@ -42,7 +37,7 @@ public class PlayerShooting : NetworkBehaviour
         gunLine = gunBarrelEnd.GetComponent<LineRenderer>();
         gunAudio = gunBarrelEnd.GetComponent<AudioSource>();
         gunLight = gunBarrelEnd.GetComponent<Light>();
-        fsm.ChangeState(Shooting.name, Shooting.Idle);
+        shootingSM.Init(ShootingState.Idle);
     }
 
     void Update()
@@ -51,7 +46,7 @@ public class PlayerShooting : NetworkBehaviour
         {
             if (Input.GetButton("Fire1"))
             {
-                fsm.ChangeState(Shooting.name, Shooting.Fire);
+                shootingSM.ChangeState(ShootingState.Fire);
                 CmdFire();
             }
         }
@@ -66,10 +61,10 @@ public class PlayerShooting : NetworkBehaviour
     [ClientRpc]
     void RpcFire()
     {
-        fsm.ChangeState(Shooting.name, Shooting.Fire);
+         shootingSM.ChangeState(ShootingState.Fire);
     }
 
-    [StateListener(state = Shooting.name, when = Shooting.Fire, on = "Enter")]
+    [StateListener(state = ShootingState.Fire, on = StateEvent.Enter)]
     void Shoot()
     {
         StartCoroutine(ShootEnumerator());
@@ -85,11 +80,11 @@ public class PlayerShooting : NetworkBehaviour
         gunLine.SetPosition(0, gunBarrelEnd.transform.position);
         if (Physics.Raycast(shootRay, out shootHit, range, shootableMask))
         {
-            // EnemyHealth enemyHealth = shootHit.collider.GetComponent <EnemyHealth>();
-            // if (enemyHealth != null)
-            // {
-            //     enemyHealth.TakeDamage(damagePerShot, shootHit.point);
-            // }
+            EnemyHealth enemyHealth = shootHit.collider.GetComponent<EnemyHealth>();
+            if (enemyHealth != null)
+            {
+                shootHit.collider.GetComponent<EventDispatcher>().Trigger(EnemyHealth.DamageEvent, damagePerShot, shootHit.point);
+            }
             gunLine.SetPosition(1, shootHit.point);
         }
         else
@@ -102,6 +97,6 @@ public class PlayerShooting : NetworkBehaviour
         gunLine.enabled = false;
         gunLight.enabled = false;
         yield return new WaitForSeconds(fireRate - effectsDisplayTime);
-        fsm.ChangeState(Shooting.name, Shooting.Idle);
+        shootingSM.ChangeState(ShootingState.Idle);
     }
 }

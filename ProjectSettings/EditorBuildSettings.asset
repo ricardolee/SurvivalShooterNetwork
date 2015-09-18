@@ -11,3 +11,5 @@ EditorBuildSettings:
     path: Assets/Scenes/Level 01.unity
   - enabled: 0
     path: Assets/Scenes/Start.unity
+  - enabled: 0
+    path: Assets/Scenes/Test.unity

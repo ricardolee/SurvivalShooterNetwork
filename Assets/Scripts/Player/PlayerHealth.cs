@@ -5,48 +5,47 @@ using System;
 using System.Collections;
 using Toolkit;
 
-[RequireComponent(typeof(FiniteStateMachine))]
+[RequireComponent(typeof(StateManager))]
+[RequireComponent(typeof(EventDispatcher))]
+[RequireComponent(typeof(AudioSource))]
 public class PlayerHealth : NetworkBehaviour
 {
 
     public static string DamageEvent ="DamageEvent";
-    
+
+    public enum HealthState {
+        Live, Death
+    }
+
+
     public static void RestartLevel()
     {
         Application.LoadLevel(Application.loadedLevel);
     }
 
-    public static class Health {
-        public const string name = "Health";
-        public const string Live = "Live";
-        public const string Death = "Death";
-    }
+    int startingHealth = 100;
 
-    public int startingHealth = 100;
-    public int currentHealth;
-    public Slider healthSlider;
-    public Image damageImage;
+    Slider healthSlider;
+    Image damageImage;
+    public AudioClip playerHurt;
     public AudioClip deathClip;
     public float flashSpeed = 0.05f;
     public Color flashColor = new Color(1f, 0f, 0f, 0.1f);
+
+    int currentHealth;
 
     Animator anim;
     AudioSource playerAudio;
     PlayerMovement playerMovement;
     PlayerShooting playerShooting;
-
-    bool isDead()
-    {
-        return fsm.GetCurrentState(Health.name) == Health.Death;
-    }
-
-    FiniteStateMachine fsm;
     EventDispatcher events;
+    
+    [StateMachineInject]
+    StateMachine<HealthState> healthSM;
     
     void Awake()
     {
-        fsm = GetComponent<FiniteStateMachine>();
-        events = fsm.events;
+        events = GetComponent<EventDispatcher>();
         anim = GetComponent<Animator>();
         playerAudio = GetComponent<AudioSource>();
         playerMovement = GetComponent<PlayerMovement>();
@@ -56,33 +55,39 @@ public class PlayerHealth : NetworkBehaviour
 
     void Start()
     {
-        fsm.ChangeState(Health.name, Health.Live);
+        healthSlider = GameObject.Find("HealthSlider").GetComponent<Slider>();
+        damageImage = GameObject.Find("DamageImage").GetComponent<Image>();
         damageListener = events.GenListener("TakeDamage", this);
+        healthSM.Init(HealthState.Live);
     }
 
     
     private Listener damageListener = null;
 
-    [StateListener(state = Health.name, when = Health.Live, on = "Enter")]
+    [StateListener(state = HealthState.Live, on = StateEvent.Enter)]
     void LiveEnter() {
         events.Register(DamageEvent, damageListener);
     }
 
-    [StateListener(state = Health.name, when = Health.Live, on = "Exit")]
+    [StateListener(state = HealthState.Live, on = StateEvent.Exit)]
     void LiveExit() {
         events.Cancel(DamageEvent, damageListener);
     }
 
-    public void TakeDamage(int amount)
+    public void TakeDamage(int amount, Action deathCallback)
     {
         currentHealth -= amount;
-        healthSlider.value = currentHealth;
+        if (isLocalPlayer)
+        {
+            healthSlider.value = currentHealth;
+            StartCoroutine(FlashDamage());
+        }
         playerAudio.Play();
         if (currentHealth <= 0)
         {
-            fsm.ChangeState(Health.name, Health.Death);
+            deathCallback();
+            healthSM.ChangeState(HealthState.Death);
         }
-        StartCoroutine(FlashDamage());
     }
 
     private IEnumerator FlashDamage()
@@ -92,7 +97,7 @@ public class PlayerHealth : NetworkBehaviour
         damageImage.color = Color.clear;
     }
 
-    [StateListener(state = Health.name, when = Health.Death, on = "Enter")]
+    [StateListener(state = HealthState.Death, on = StateEvent.Enter)]
     void Death()
     {
         anim.SetTrigger("Die");
@@ -101,6 +106,4 @@ public class PlayerHealth : NetworkBehaviour
         playerMovement.enabled = false;
         playerShooting.enabled = false;
     }
-
-
 }

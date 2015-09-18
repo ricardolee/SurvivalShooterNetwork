@@ -1,25 +1,42 @@
 ﻿using UnityEngine;
+using UnityEngine.Networking;
+using Toolkit;
 
-public class EnemyManager : MonoBehaviour
+public class EnemyManager : NetworkBehaviour
 {
-    public PlayerHealth playerHealth;
-    public GameObject enemy;
+    public GameObject enemyFrefab;
     public float spawnTime = 3f;
     public Transform[] spawnPoints;
 
 
     void Start () {
-        InvokeRepeating ("Spawn", spawnTime, spawnTime);
+        if (isServer)
+        {
+            InvokeRepeating ("Spawn", spawnTime, spawnTime);
+        }
     }
 
 
     void Spawn () {
-        if (playerHealth.currentHealth <= 0f) {
-            return;
+
+
+        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        bool isAlivePlayer = false;
+        foreach (GameObject go in players)
+        {
+            PlayerHealth.HealthState current = go.GetComponent<StateManager>().GetCurrentState<PlayerHealth.HealthState>();
+            if (PlayerHealth.HealthState.Live == current)
+            {
+                isAlivePlayer = true;
+            }
         }
 
+        if(!isAlivePlayer) {
+            return;
+        }
+        
         int spawnPointIndex = Random.Range (0, spawnPoints.Length);
-
-        Instantiate (enemy, spawnPoints[spawnPointIndex].position, spawnPoints[spawnPointIndex].rotation);
+        GameObject enem = GameObject.Instantiate(enemyFrefab, spawnPoints[spawnPointIndex].position, spawnPoints[spawnPointIndex].rotation) as GameObject;
+        NetworkServer.Spawn(enem);
     }
 }

@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
-
+using System;
+using Toolkit;
 public class GameOverManager : MonoBehaviour{
 
     [HideInInspector]
-    public PlayerHealth playerHealth;
     public float restartDelay = 5f;
 
     Animator anim;
@@ -15,11 +15,14 @@ public class GameOverManager : MonoBehaviour{
     }
     
     void Start() {
-        playerHealth = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerHealth>();
+        InvokeRepeating("CheckGameOver", 0, 1000);
     }
 
-    void Update() {
-        if (playerHealth.currentHealth <= 0) {
+    void CheckGameOver() {
+        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        players = Array.FindAll(players, (go) => PlayerHealth.HealthState.Live == go.GetComponent<StateManager>().GetCurrentState<PlayerHealth.HealthState>());
+        if (players.Length == 0)
+        {
             anim.SetTrigger("GameOver");
             restartTimer += Time.deltaTime;
             if (restartTimer >= restartDelay) {

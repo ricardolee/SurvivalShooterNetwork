@@ -1,6 +1,17 @@
 ﻿using UnityEngine;
+using Toolkit;
+using System.Collections;
 
+[RequireComponent(typeof(StateManager))]
 public class EnemyHealth : MonoBehaviour {
+
+    public const string DamageEvent = "DamageEvent";
+    
+    public enum HealthState
+    {
+        Live, Die, Sink 
+    }
+    
     public int startingHealth = 100;
     public int currentHealth;
     public float sinkSpeed = 2.5f;
@@ -10,61 +21,80 @@ public class EnemyHealth : MonoBehaviour {
     Animator anim;
     AudioSource enemyAudio;
     ParticleSystem hitParticles;
-    CapsuleCollider capsuleCollider;
-    bool isDead;
-    bool isSinking;
+    SphereCollider sphereCollider;
 
+    EventDispatcher events;
+
+    [StateMachineInject]
+    StateMachine<HealthState> healthSM;
+    Listener damageListene;
+    
     void Awake () {
         anim = GetComponent <Animator> ();
         enemyAudio = GetComponent <AudioSource> ();
         hitParticles = GetComponentInChildren <ParticleSystem> ();
-        capsuleCollider = GetComponent <CapsuleCollider> ();
-
+        sphereCollider = GetComponent<SphereCollider> ();
+        
         currentHealth = startingHealth;
+        events = GetComponent<EventDispatcher>();
+        damageListene = events.GenListener("TakeDamage", this);
+    }
+
+    void Start() {
+        healthSM.Init(HealthState.Live);
     }
 
 
+    
     void Update () {
-        if(isSinking) {
-            transform.Translate (-Vector3.up * sinkSpeed * Time.deltaTime);
-        }
+        healthSM.Update();
     }
 
 
-    public void TakeDamage (int amount, Vector3 hitPoint) {
-        if(isDead)
-            return;
-
+    void TakeDamage (int amount, Vector3 hitPoint) {
         enemyAudio.Play ();
-
         currentHealth -= amount;
-            
         hitParticles.transform.position = hitPoint;
         hitParticles.Play();
-
         if(currentHealth <= 0) {
-            Death ();
+            healthSM.ChangeState(HealthState.Die);
         }
     }
 
-
-    void Death () {
-        isDead = true;
-
-        capsuleCollider.isTrigger = true;
-
-        anim.SetTrigger ("Dead");
-
-        enemyAudio.clip = deathClip;
-        enemyAudio.Play ();
+    [StateListener(state = HealthState.Live, on = StateEvent.Enter)]
+    void LiveEnter() {
+        events.Register(DamageEvent, damageListene);
     }
 
+    [StateListener(state = HealthState.Live, on = StateEvent.Exit)]
+    void LiveExit() {
+        events.Cancel(DamageEvent, damageListene);
+    }
 
-    public void StartSinking () {
+    
+    [StateListener(state = HealthState.Die, on = StateEvent.Enter)]
+    IEnumerator Die () {
+        anim.SetTrigger ("Die");
+        enemyAudio.clip = deathClip;
+        enemyAudio.Play ();
+        sphereCollider.isTrigger = true;
+        yield return new WaitForSeconds(2);
+        healthSM.ChangeState(HealthState.Sink);
+    }
+
+    [StateListener(state = HealthState.Sink, on = StateEvent.Enter)]
+    void StartSinking () {
         GetComponent <NavMeshAgent> ().enabled = false;
         GetComponent <Rigidbody> ().isKinematic = true;
-        isSinking = true;
         ScoreManager.score += scoreValue;
         Destroy (gameObject, 2f);
     }
+    
+    [StateListener(state = HealthState.Sink, on = StateEvent.Update)]
+    void SinkUpdate () {
+        transform.Translate (-Vector3.up * sinkSpeed * Time.deltaTime);
+    }
+
+
+
 }
