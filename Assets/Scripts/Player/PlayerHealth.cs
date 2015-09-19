@@ -105,5 +105,6 @@ public class PlayerHealth : NetworkBehaviour
         playerAudio.Play();
         playerMovement.enabled = false;
         playerShooting.enabled = false;
+        NetworkManager.singleton.StopHost();
     }
 }
